@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Reset activity select options (keep placeholder)
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
@@ -20,11 +23,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Build participants markup
+        let participantsMarkup = "";
+        if (Array.isArray(details.participants) && details.participants.length > 0) {
+          const items = details.participants
+            .map((p) => {
+              // create initials for badge from email/name string
+              const initials = (p || "")
+                .split(/[\s@._-]+/)
+                .filter(Boolean)
+                .slice(0,2)
+                .map(s => s[0]?.toUpperCase() || "")
+                .join("")
+                .slice(0,2);
+
+              return `
+                <li class="participant-item">
+                  <span class="participant-badge">${initials}</span>
+                  <span class="participant-name">${p}</span>
+                </li>
+              `;
+            })
+            .join("");
+
+          participantsMarkup = `
+            <div class="participants">
+              <h5>Participants</h5>
+              <ul class="participant-list">
+                ${items}
+              </ul>
+            </div>
+          `;
+        } else {
+          participantsMarkup = `
+            <div class="participants">
+              <h5>Participants</h5>
+              <div class="participant-empty">No participants yet — be the first to sign up!</div>
+            </div>
+          `;
+        }
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          ${participantsMarkup}
         `;
 
         activitiesList.appendChild(activityCard);
@@ -62,6 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
