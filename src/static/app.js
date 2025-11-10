@@ -41,6 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 <li class="participant-item">
                   <span class="participant-badge">${initials}</span>
                   <span class="participant-name">${p}</span>
+                  <button class="delete-participant" title="Remove participant" data-activity="${name}" data-email="${p}">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 6L14 14M6 14L14 6" stroke="#c62828" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
                 </li>
               `;
             })
@@ -72,6 +77,34 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Add event listeners for delete buttons after rendering
+        activityCard.querySelectorAll('.delete-participant').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const activityName = btn.getAttribute('data-activity');
+            const email = btn.getAttribute('data-email');
+            if (!activityName || !email) return;
+            btn.disabled = true;
+            btn.innerHTML = '<span style="color:#c62828;font-size:12px;">Removing...</span>';
+            try {
+              const response = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+              });
+              const result = await response.json();
+              if (response.ok) {
+                fetchActivities();
+                showMessage(result.message, 'success');
+              } else {
+                showMessage(result.detail || 'Failed to remove participant.', 'error');
+              }
+            } catch (err) {
+              showMessage('Error removing participant.', 'error');
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
